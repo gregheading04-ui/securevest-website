@@ -103,7 +103,7 @@ def deposit():
         with open("deposits.json", "w") as f:
             json.dump(deposits, f)
 
-        return "Deposit request submitted!"
+        return redirect('/dashboard')
 
     return render_template("deposit.html")
 # -------- LOGOUT --------
