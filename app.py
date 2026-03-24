@@ -1,6 +1,6 @@
 import json
 import os
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, flash
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
@@ -103,7 +103,8 @@ def deposit():
         with open("deposits.json", "w") as f:
             json.dump(deposits, f)
 
-        return redirect('/dashboard')
+        flash("Deposit submitted successfully! Await confirmation.")
+return redirect('/dashboard')
 
     return render_template("deposit.html")
 # -------- LOGOUT --------
