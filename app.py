@@ -55,10 +55,16 @@ def register():
     return render_template('register.html')
     
 # -------- LOGIN --------
-      @app.route('/login', methods=['GET', 'POST'])
+    @app.route('/login', methods=['GET', 'POST'])
 def login():
-    users = load_users()
     error = None
+
+    # Load users safely
+    if not os.path.exists("users.json"):
+        users = {}
+    else:
+        with open("users.json", "r") as f:
+            users = json.load(f)
 
     if request.method == 'POST':
         username = request.form['username']
@@ -78,7 +84,7 @@ def login():
             return redirect('/dashboard')
 
     return render_template('login.html', error=error)
-
+    
 # -------- DASHBOARD --------
 @app.route('/dashboard')
 def dashboard():
