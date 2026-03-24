@@ -29,7 +29,7 @@ a {
 </style>
 </head>
 <body>
-<a href="/" style="color: #00ff88;">⬅ Home</a>
+<a href="/" style="color: #00ff88;"> Home</a>
 <h2>Welcome, {{ user }}</h2>
 {% with messages = get_flashed_messages() %}
   {% if messages %}
@@ -46,12 +46,12 @@ a {
 
 <div class="card">
     <h3>Actions</h3>
-    <a href="/">🏠 Home</a>
-    <a href="/deposit" class="">💰 Deposit</a>
-    <a href="#">💸 Withdraw</a>
+    <a href="/">Home</a>
+    <a href="/deposit">Deposit</a>
+    <a href="#">Withdraw</a>
+    <a href="/my-deposits">My Deposits</a>
 </div>
 
 <a href="/logout" class="logout">Logout</a>
-
 </body>
 </html>
