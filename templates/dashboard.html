@@ -31,7 +31,14 @@ a {
 <body>
 <a href="/" style="color: #00ff88;">⬅ Home</a>
 <h2>Welcome, {{ user }}</h2>
-
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <div style="background: green; color: white; padding: 10px; margin: 10px; border-radius: 5px;">
+      {{ messages[0] }}
+    </div>
+  {% endif %}
+{% endwith %}
+    
 <div class="card">
     <h3>Balance</h3>
     <p>₦{{ balance }}</p>
