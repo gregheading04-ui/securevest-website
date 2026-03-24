@@ -31,19 +31,31 @@ def register():
     error = None
 
     if request.method == 'POST':
-        username = request.form['username']
+        fullname = request.form['fullname']
+        email = request.form['username']
+        phone = request.form['email address']
+        username = request.form['phone number']
         password = request.form['password']
+        confirm_password = request.form['confirm_password']
+        referral = request.form.get('referral', '')
 
-        if not username or not password:
-            error = "All fields are required"
+        if not fullname or not email or not phone or not username or not password:
+            error = "All fields except referral are required"
+
+        elif password != confirm_password:
+            error = "Passwords do not match"
 
         elif username in users:
-            error = "User already exists"
+            error = "Username already exists"
 
         else:
             users[username] = {
+                "fullname": fullname,
+                "email": email,
+                "phone": phone,
                 "password": password,
-                "balance": 0
+                "balance": 0,
+                "referral": referral
             }
 
             save_users(users)
