@@ -32,15 +32,15 @@ def register():
 
     if request.method == 'POST':
         fullname = request.form['fullname']
-        email = request.form['username']
-        phone = request.form['email address']
-        username = request.form['phone number']
+        username = request.form['username']
+        email = request.form['email']
+        phone = request.form['phone']
         password = request.form['password']
         confirm_password = request.form['confirm_password']
-        referral = request.form.get('referral', '')
 
-        if not fullname or not email or not phone or not username or not password:
-            error = "All fields except referral are required"
+        # Validation
+        if not fullname or not username or not email or not phone or not password:
+            error = "All fields are required"
 
         elif password != confirm_password:
             error = "Passwords do not match"
@@ -54,8 +54,7 @@ def register():
                 "email": email,
                 "phone": phone,
                 "password": password,
-                "balance": 0,
-                "referral": referral
+                "balance": 0
             }
 
             save_users(users)
