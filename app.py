@@ -72,8 +72,14 @@ def dashboard():
 
     users = load_users()
     user = session['user']
-    balance = users[user]["balance"]
-    
+
+    # Safe balance handling
+    if user in users:
+        balance = users[user].get('balance', 0)
+    else:
+        balance = 0
+
+    return render_template('dashboard.html', user=user, balance=balance)
 # -------- DEPOSIT --------
 @app.route('/deposit', methods=['GET', 'POST'])
 def deposit():
