@@ -55,11 +55,10 @@ def register():
     return render_template('register.html')
     
 # -------- LOGIN --------
-    @app.route('/login', methods=['GET', 'POST'])
-    def login():
+ @app.route('/login', methods=['GET', 'POST'])
+ def login():
     error = None
 
-    # Load users safely
     if not os.path.exists("users.json"):
         users = {}
     else:
