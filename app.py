@@ -113,6 +113,27 @@ def deposit():
         return redirect('/dashboard')
 
     return render_template("deposit.html")
+
+
+
+@app.route('/my-deposits')
+def my_deposits():
+    if 'user' not in session:
+        return redirect('/login')
+
+    user = session['user']
+
+    # Load deposits
+    if not os.path.exists("deposits.json"):
+        deposits = []
+    else:
+        with open("deposits.json", "r") as f:
+            deposits = json.load(f)
+
+    # Filter only this user's deposits
+    user_deposits = [d for d in deposits if d['user'] == user]
+
+    return render_template('my_deposits.html', deposits=user_deposits)
     
 # -------- LOGOUT --------
 @app.route('/logout')
