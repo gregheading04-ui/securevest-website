@@ -1,43 +1,68 @@
+import json
+import os
 from flask import Flask, render_template, request, redirect, session
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
 
-# Fake database (temporary)
-users = {}
+DATA_FILE = "users.json"
+
+# -------- LOAD USERS --------
+def load_users():
+    if not os.path.exists(DATA_FILE):
+        return {}
+    with open(DATA_FILE, "r") as f:
+        return json.load(f)
+
+# -------- SAVE USERS --------
+def save_users(users):
+    with open(DATA_FILE, "w") as f:
+        json.dump(users, f)
 
 # -------- HOME --------
 @app.route('/')
 def home():
     return render_template('index.html')
 
-# -------- LOGIN --------
-@app.route('/login', methods=['GET', 'POST'])
-def login():
+# -------- REGISTER --------
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    users = load_users()
+
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
 
-        if username in users and users[username] == password:
+        if username in users:
+            return "User already exists"
+
+        users[username] = {
+            "password": password,
+            "balance": 0
+        }
+
+        save_users(users)
+        session['user'] = username
+        return redirect('/dashboard')
+
+    return render_template('register.html')
+
+# -------- LOGIN --------
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    users = load_users()
+
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        if username in users and users[username]["password"] == password:
             session['user'] = username
-            return redirect('/dashboard')  # ✅ FIXED
+            return redirect('/dashboard')
 
         return "Invalid login details"
 
     return render_template('login.html')
-
-# -------- REGISTER --------
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-
-        users[username] = password
-        session['user'] = username
-        return redirect('/dashboard')  # ✅ FIXED
-
-    return render_template('register.html')
 
 # -------- DASHBOARD --------
 @app.route('/dashboard')
@@ -45,7 +70,11 @@ def dashboard():
     if 'user' not in session:
         return redirect('/login')
 
-    return render_template('dashboard.html', user=session['user'])
+    users = load_users()
+    user = session['user']
+    balance = users[user]["balance"]
+
+    return render_template('dashboard.html', user=user, balance=balance)
 
 # -------- LOGOUT --------
 @app.route('/logout')
@@ -55,4 +84,5 @@ def logout():
 
 # -------- RUN --------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080)
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
