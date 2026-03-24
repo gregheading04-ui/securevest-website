@@ -3,66 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SecureVest Platform</title>
+    <title>SecureVest</title>
+
     <style>
         body {
             margin: 0;
             font-family: Arial, sans-serif;
             background: #0f172a;
             color: white;
-            text-align: center;
         }
-        header {
-            padding: 20px;
-            font-size: 24px;
-            font-weight: bold;
+
+        /* NAVBAR */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 20px;
             background: #020617;
         }
-        .container {
-            padding: 40px 20px;
+
+        .navbar h1 {
+            margin: 0;
+            font-size: 20px;
         }
+
+        .nav-btn {
+            background: #22c55e;
+            padding: 8px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            color: white;
+        }
+
+        /* HERO */
+        .hero {
+            text-align: center;
+            padding: 50px 20px;
+        }
+
+        .hero h2 {
+            font-size: 28px;
+        }
+
+        /* CARDS */
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
         .card {
             background: #1e293b;
-            margin: 20px auto;
             padding: 20px;
+            margin: 15px;
             border-radius: 10px;
+            width: 90%;
             max-width: 400px;
+            text-align: center;
         }
+
         .btn {
             display: inline-block;
+            margin-top: 10px;
             padding: 10px 20px;
             background: #22c55e;
             color: white;
             text-decoration: none;
             border-radius: 5px;
-            margin-top: 10px;
         }
     </style>
 </head>
+
 <body>
 
-<header>
-    🚀 SecureVest Investment Platform
-</header>
+<!-- NAVBAR -->
+<div class="navbar">
+    <h1>SecureVest</h1>
+    <a href="#" class="nav-btn">Login</a>
+</div>
 
+<!-- HERO -->
+<div class="hero">
+    <h2>Grow Your Money Securely 🚀</h2>
+    <p>Smart investments. Daily returns.</p>
+</div>
+
+<!-- CONTENT -->
 <div class="container">
 
     <div class="card">
-        <h2>💰 Investment Plan</h2>
+        <h3>💰 Investment Plan</h3>
         <p>Earn 10% daily for 5 days</p>
     </div>
 
     <div class="card">
-        <h2>💳 Deposit</h2>
+        <h3>💳 Deposit</h3>
         <p>Bank: Wema Bank</p>
         <p>Account Number: 7650624571</p>
     </div>
 
     <div class="card">
-        <h2>📞 Support</h2>
-        <a class="btn" href="https://wa.me/2347067570766">WhatsApp Support</a>
-        <br><br>
-        <a class="btn" href="https://t.me/CreativeArtistAgency">Telegram Support</a>
+        <h3>📞 Support</h3>
+        <a class="btn" href="https://wa.me/2347067570766">WhatsApp</a><br><br>
+        <a class="btn" href="https://t.me/CreativeArtistAgency">Telegram</a>
     </div>
 
 </div>
