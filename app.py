@@ -75,7 +75,37 @@ def dashboard():
     balance = users[user]["balance"]
 
     return render_template('dashboard.html', user=user, balance=balance)
+# -------- DEPOSIT --------
+@app.route('/deposit', methods=['GET', 'POST'])
+def deposit():
+    if 'user' not in session:
+        return redirect('/login')
 
+    if request.method == 'POST':
+        amount = request.form['amount']
+        user = session['user']
+
+        # Load deposits
+        if not os.path.exists("deposits.json"):
+            deposits = []
+        else:
+            with open("deposits.json", "r") as f:
+                deposits = json.load(f)
+
+        # Add new deposit
+        deposits.append({
+            "user": user,
+            "amount": amount,
+            "status": "pending"
+        })
+
+        # Save deposits
+        with open("deposits.json", "w") as f:
+            json.dump(deposits, f)
+
+        return "Deposit request submitted!"
+
+    return render_template("deposit.html")
 # -------- LOGOUT --------
 @app.route('/logout')
 def logout():
