@@ -33,12 +33,15 @@ def register():
         username = request.form['username']
         password = request.form['password']
 
-if not username or not password:
-    return "Username and password cannot be empty"
-        
-    if username in users:
+        # ✅ Validation
+        if not username or not password:
+            return "Username and password cannot be empty"
+
+        # ✅ Check if user exists
+        if username in users:
             return "User already exists"
 
+        # ✅ Save new user
         users[username] = {
             "password": password,
             "balance": 0
@@ -46,10 +49,10 @@ if not username or not password:
 
         save_users(users)
         session['user'] = username
+
         return redirect('/dashboard')
 
     return render_template('register.html')
-
 # -------- LOGIN --------
 @app.route('/login', methods=['GET', 'POST'])
 def login():
