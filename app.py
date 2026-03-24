@@ -33,7 +33,10 @@ def register():
         username = request.form['username']
         password = request.form['password']
 
-        if username in users:
+if not username or not password:
+    return "Username and password cannot be empty"
+        
+    if username in users:
             return "User already exists"
 
         users[username] = {
