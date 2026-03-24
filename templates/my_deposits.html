@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Deposits</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #0f172a;
+            color: white;
+            padding: 20px;
+        }
+
+        .card {
+            background: #1e293b;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+        }
+
+        .pending {
+            color: orange;
+        }
+
+        .approved {
+            color: lightgreen;
+        }
+
+        .rejected {
+            color: red;
+        }
+
+        a {
+            color: #00ff88;
+        }
+    </style>
+</head>
+<body>
+
+<a href="/dashboard"> Back to Dashboard</a>
+
+<h2>My Deposits</h2>
+
+{% if deposits %}
+    {% for d in deposits %}
+        <div class="card">
+            <p><b>Amount:</b> ₦{{ d.amount }}</p>
+            <p>
+                <b>Status:</b> 
+                <span class="{{ d.status }}">{{ d.status }}</span>
+            </p>
+        </div>
+    {% endfor %}
+{% else %}
+    <p>No deposits yet.</p>
+{% endif %}
+
+</body>
+</html>
