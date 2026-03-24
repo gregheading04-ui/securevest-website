@@ -56,7 +56,7 @@ def register():
     
 # -------- LOGIN --------
     @app.route('/login', methods=['GET', 'POST'])
-def login():
+    def login():
     error = None
 
     # Load users safely
