@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Dashboard</title>
+<style>
+body { background:#0f172a; color:white; font-family:Arial; text-align:center; padding-top:50px;}
+
+.card {
+    background:#1e293b;
+    margin:20px auto;
+    padding:20px;
+    border-radius:10px;
+    width:90%;
+    max-width:400px;
+}
+
+a {
+    display:inline-block;
+    margin:10px;
+    padding:10px 20px;
+    background:#22c55e;
+    color:white;
+    text-decoration:none;
+    border-radius:5px;
+}
+.logout {
+    background:red;
+}
+</style>
+</head>
+<body>
+
+<h2>Welcome, {{ user }}</h2>
+
+<div class="card">
+    <h3>Balance</h3>
+    <p>₦{{ balance }}</p>
+</div>
+
+<div class="card">
+    <h3>Actions</h3>
+    <a href="/">🏠 Home</a>
+    <a href="#" class="">💰 Deposit</a>
+    <a href="#">💸 Withdraw</a>
+</div>
+
+<a href="/logout" class="logout">Logout</a>
+
+</body>
+</html>
