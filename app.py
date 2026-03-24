@@ -28,29 +28,29 @@ def home():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     users = load_users()
+    error = None
 
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
 
         if not username or not password:
-            return "Username and password cannot be empty"
+            error = "All fields are required"
 
-        if username in users:
-            return "User already exists"
+        elif username in users:
+            error = "User already exists"
 
-        users[username] = {
-            "password": password,
-            "balance": 0
-        }
+        else:
+            users[username] = {
+                "password": password,
+                "balance": 0
+            }
 
-        save_users(users)
-        session['user'] = username
+            save_users(users)
+            session['user'] = username
+            return redirect('/dashboard')
 
-        return redirect('/dashboard')
-
-    return render_template('register.html')
-
+    return render_template('register.html', error=error)
 # -------- LOGIN --------
 @app.route('/login', methods=['GET', 'POST'])
 def login():
