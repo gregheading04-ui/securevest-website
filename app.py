@@ -53,22 +53,31 @@ def register():
         return redirect('/dashboard')
 
     return render_template('register.html')
+    
 # -------- LOGIN --------
-@app.route('/login', methods=['GET', 'POST'])
+      @app.route('/login', methods=['GET', 'POST'])
 def login():
     users = load_users()
+    error = None
 
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
 
-        if username in users and users[username]['password'] == password:
+        if not username or not password:
+            error = "All fields are required"
+
+        elif username not in users:
+            error = "User does not exist"
+
+        elif users[username]['password'] != password:
+            error = "Wrong password"
+
+        else:
             session['user'] = username
             return redirect('/dashboard')
 
-        return "Invalid login details"
-
-    return render_template('login.html')
+    return render_template('login.html', error=error)
 
 # -------- DASHBOARD --------
 @app.route('/dashboard')
