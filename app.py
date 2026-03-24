@@ -98,11 +98,15 @@ def dashboard():
     user = session['user']
     balance = users[user]["balance"]
 
-    return f"""
-    <h2>Welcome {user}</h2>
-    <p>Balance: ₦{balance}</p>
-    <a href="/logout">Logout</a>
-    """
+    <h2>Welcome</h2>
+<p>Balance: ₦0</p>
+
+<br>
+
+<a href="/" style="color:green;">🏠 Go to Home</a>
+<br><br>
+
+<a href="/logout" style="color:red;">Logout</a>
 
 @app.route('/logout')
 def logout():
