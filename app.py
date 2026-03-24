@@ -4,13 +4,14 @@ from flask import Flask, render_template, request, redirect, session
 app = Flask(__name__)
 app.secret_key = "securekey123"
 
-# Fake database (we'll upgrade later)
+# Temporary database
 users = {}
 
 @app.route('/')
 def home():
     return render_template("index.html")
 
+# -------- REGISTER --------
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -24,34 +25,9 @@ def register():
 
         return redirect('/login')
 
-    return '''
-<!DOCTYPE html>
-<html>
-<head>
-<title>Register</title>
-<style>
-body { background:#0f172a; color:white; font-family:Arial; text-align:center; padding-top:50px;}
-input { padding:10px; margin:10px; width:200px; border-radius:5px; border:none;}
-button { padding:10px 20px; background:#22c55e; border:none; color:white; border-radius:5px;}
-a { color:#22c55e; display:block; margin-top:10px;}
-</style>
-</head>
-<body>
+    return render_template("register.html")
 
-<h2>Create Account</h2>
-
-<form method="POST">
-<input name="username" placeholder="Username"><br>
-<input name="password" type="password" placeholder="Password"><br>
-<button type="submit">Register</button>
-</form>
-
-<a href="/login">Already have an account? Login</a>
-
-</body>
-</html>
-'''
-
+# -------- LOGIN --------
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -62,34 +38,9 @@ def login():
             session['user'] = username
             return redirect('/dashboard')
 
-    return '''
-<!DOCTYPE html>
-<html>
-<head>
-<title>Login</title>
-<style>
-body { background:#0f172a; color:white; font-family:Arial; text-align:center; padding-top:50px;}
-input { padding:10px; margin:10px; width:200px; border-radius:5px; border:none;}
-button { padding:10px 20px; background:#22c55e; border:none; color:white; border-radius:5px;}
-a { color:#22c55e; display:block; margin-top:10px;}
-</style>
-</head>
-<body>
+    return render_template("login.html")
 
-<h2>Login</h2>
-
-<form method="POST">
-<input name="username" placeholder="Username"><br>
-<input name="password" type="password" placeholder="Password"><br>
-<button type="submit">Login</button>
-</form>
-
-<a href="/register">Don't have an account? Register</a>
-
-</body>
-</html>
-'''
-
+# -------- DASHBOARD --------
 @app.route('/dashboard')
 def dashboard():
     if 'user' not in session:
@@ -98,16 +49,9 @@ def dashboard():
     user = session['user']
     balance = users[user]["balance"]
 
-    <h2>Welcome</h2>
-<p>Balance: ₦0</p>
+    return render_template("dashboard.html", user=user, balance=balance)
 
-<br>
-
-<a href="/" style="color:green;">🏠 Go to Home</a>
-<br><br>
-
-<a href="/logout" style="color:red;">Logout</a>
-
+# -------- LOGOUT --------
 @app.route('/logout')
 def logout():
     session.pop('user', None)
