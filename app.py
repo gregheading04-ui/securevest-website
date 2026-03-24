@@ -33,15 +33,12 @@ def register():
         username = request.form['username']
         password = request.form['password']
 
-        # ✅ Validation
         if not username or not password:
             return "Username and password cannot be empty"
 
-        # ✅ Check if user exists
         if username in users:
             return "User already exists"
 
-        # ✅ Save new user
         users[username] = {
             "password": password,
             "balance": 0
@@ -53,17 +50,12 @@ def register():
         return redirect('/dashboard')
 
     return render_template('register.html')
-    
-# -------- LOGIN --------
- @app.route('/login', methods=['GET', 'POST'])
- def login():
-    error = None
 
-    if not os.path.exists("users.json"):
-        users = {}
-    else:
-        with open("users.json", "r") as f:
-            users = json.load(f)
+# -------- LOGIN --------
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    error = None
+    users = load_users()
 
     if request.method == 'POST':
         username = request.form['username']
@@ -83,7 +75,7 @@ def register():
             return redirect('/dashboard')
 
     return render_template('login.html', error=error)
-    
+
 # -------- DASHBOARD --------
 @app.route('/dashboard')
 def dashboard():
@@ -93,13 +85,10 @@ def dashboard():
     users = load_users()
     user = session['user']
 
-    # Safe balance handling
-    if user in users:
-        balance = users[user].get('balance', 0)
-    else:
-        balance = 0
+    balance = users.get(user, {}).get('balance', 0)
 
     return render_template('dashboard.html', user=user, balance=balance)
+
 # -------- DEPOSIT --------
 @app.route('/deposit', methods=['GET', 'POST'])
 def deposit():
@@ -110,32 +99,27 @@ def deposit():
         amount = request.form.get('amount')
         user = session['user']
 
-        # Load existing deposits
         if not os.path.exists("deposits.json"):
             deposits = []
         else:
             with open("deposits.json", "r") as f:
                 deposits = json.load(f)
 
-        # Add new deposit
         deposits.append({
             "user": user,
             "amount": amount,
             "status": "pending"
         })
 
-        # Save deposits
         with open("deposits.json", "w") as f:
             json.dump(deposits, f)
 
-        # Show message + redirect
         flash("Deposit submitted successfully! Await confirmation.")
         return redirect('/dashboard')
 
     return render_template("deposit.html")
 
-
-
+# -------- MY DEPOSITS --------
 @app.route('/my-deposits')
 def my_deposits():
     if 'user' not in session:
@@ -143,18 +127,16 @@ def my_deposits():
 
     user = session['user']
 
-    # Load deposits
     if not os.path.exists("deposits.json"):
         deposits = []
     else:
         with open("deposits.json", "r") as f:
             deposits = json.load(f)
 
-    # Filter only this user's deposits
     user_deposits = [d for d in deposits if d['user'] == user]
 
     return render_template('my_deposits.html', deposits=user_deposits)
-    
+
 # -------- LOGOUT --------
 @app.route('/logout')
 def logout():
