@@ -143,6 +143,35 @@ def admin_deposits():
 
     return render_template('admin_deposits.html', deposits=deposits)
 
+@app.route('/approve/<int:index>')
+def approve_deposit(index):
+    if 'user' not in session or session['user'] != 'Uwakmfon':
+        return redirect('/login')
+
+    # Load deposits
+    if not os.path.exists("deposits.json"):
+        return redirect('/admin/deposits')
+
+    with open("deposits.json", "r") as f:
+        deposits = json.load(f)
+
+    if index < len(deposits):
+        deposits[index]['status'] = "approved"
+
+        # Update user balance
+        users = load_users()
+        user = deposits[index]['user']
+        amount = int(deposits[index]['amount'])
+
+        if user in users:
+            users[user]['balance'] += amount
+            save_users(users)
+
+    with open("deposits.json", "w") as f:
+        json.dump(deposits, f)
+
+    return redirect('/admin/deposits')
+    
 # -------- MY DEPOSITS --------
 @app.route('/my-deposits')
 def my_deposits():
