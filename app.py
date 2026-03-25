@@ -152,7 +152,54 @@ def deposit():
         return redirect('/dashboard')
 
     return render_template("deposit.html")
-    
+
+@app.route('/withdraw', methods=['GET', 'POST'])
+def withdraw():
+    if 'user' not in session:
+        return redirect('/login')
+
+    users = load_users()
+    user = session['user']
+    error = None
+
+    if request.method == 'POST':
+        amount = request.form.get('amount')
+        bank = request.form.get('bank')
+        account = request.form.get('account')
+
+        if not amount or not bank or not account:
+            error = "All fields are required"
+
+        else:
+            amount = int(amount)
+
+            if amount > users[user]['balance']:
+                error = "Insufficient balance"
+
+            else:
+                # Load withdrawals
+                if not os.path.exists("withdrawals.json"):
+                    withdrawals = []
+                else:
+                    with open("withdrawals.json", "r") as f:
+                        withdrawals = json.load(f)
+
+                withdrawals.append({
+                    "user": user,
+                    "amount": amount,
+                    "bank": bank,
+                    "account": account,
+                    "status": "pending"
+                })
+
+                with open("withdrawals.json", "w") as f:
+                    json.dump(withdrawals, f)
+
+                flash("Withdrawal request submitted")
+                return redirect('/dashboard')
+
+    return render_template('withdraw.html', error=error)
+
 @app.route('/admin/deposits')
 def admin_deposits():
     if 'user' not in session or session['user'] != 'Uwakmfon':
