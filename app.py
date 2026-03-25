@@ -132,6 +132,9 @@ def deposit():
     
 @app.route('/admin/deposits')
 def admin_deposits():
+    if 'user' not in session or session['user'] != 'Uwakmfon':
+        return redirect('/login')
+
     if not os.path.exists("deposits.json"):
         deposits = []
     else:
