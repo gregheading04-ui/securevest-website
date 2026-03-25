@@ -129,6 +129,16 @@ def deposit():
         return redirect('/dashboard')
 
     return render_template("deposit.html")
+    
+@app.route('/admin/deposits')
+def admin_deposits():
+    if not os.path.exists("deposits.json"):
+        deposits = []
+    else:
+        with open("deposits.json", "r") as f:
+            deposits = json.load(f)
+
+    return render_template('admin_deposits.html', deposits=deposits)
 
 # -------- MY DEPOSITS --------
 @app.route('/my-deposits')
