@@ -98,8 +98,31 @@ def dashboard():
 
     balance = users.get(user, {}).get('balance', 0)
 
-    return render_template('dashboard.html', user=user, balance=balance)
+    # Load deposits
+    if not os.path.exists("deposits.json"):
+        deposits = []
+    else:
+        with open("deposits.json", "r") as f:
+            deposits = json.load(f)
 
+    # Get this user's deposits
+    user_deposits = [d for d in deposits if d['user'] == user]
+
+    message = None
+
+    if user_deposits:
+        last = user_deposits[-1]
+
+        if last['status'] == "approved":
+            message = f"✅ Your deposit of ₦{last['amount']} was approved"
+
+        elif last['status'] == "rejected":
+            message = f"❌ Your deposit of ₦{last['amount']} was rejected"
+
+        else:
+            message = f"⏳ Your deposit of ₦{last['amount']} is pending"
+
+    return render_template('dashboard.html', user=user, balance=balance, message=message)
 # -------- DEPOSIT --------
 @app.route('/deposit', methods=['GET', 'POST'])
 def deposit():
