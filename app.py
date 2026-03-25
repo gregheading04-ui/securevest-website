@@ -226,6 +226,37 @@ def admin_withdrawals():
 
     return render_template('admin_withdrawals.html', withdrawals=withdrawals)
 
+@app.route('/approve-withdraw/<int:index>')
+def approve_withdraw(index):
+    if 'user' not in session or session['user'] != 'Uwakmfon':
+        return redirect('/login')
+
+    if not os.path.exists("withdrawals.json"):
+        return redirect('/admin/withdrawals')
+
+    with open("withdrawals.json", "r") as f:
+        withdrawals = json.load(f)
+
+    if index < len(withdrawals):
+        # Only process if still pending
+        if withdrawals[index]['status'] == "pending":
+            user = withdrawals[index]['user']
+            amount = int(withdrawals[index]['amount'])
+
+            users = load_users()
+
+            # Deduct balance
+            if user in users and users[user]['balance'] >= amount:
+                users[user]['balance'] -= amount
+                save_users(users)
+
+                withdrawals[index]['status'] = "approved"
+
+    with open("withdrawals.json", "w") as f:
+        json.dump(withdrawals, f)
+
+    return redirect('/admin/withdrawals')
+
 @app.route('/approve/<int:index>')
 def approve_deposit(index):
     if 'user' not in session or session['user'] != 'Uwakmfon':
