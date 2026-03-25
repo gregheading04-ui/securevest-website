@@ -171,7 +171,6 @@ def approve_deposit(index):
     if 'user' not in session or session['user'] != 'Uwakmfon':
         return redirect('/login')
 
-    # Load deposits
     if not os.path.exists("deposits.json"):
         return redirect('/admin/deposits')
 
@@ -179,16 +178,17 @@ def approve_deposit(index):
         deposits = json.load(f)
 
     if index < len(deposits):
-        deposits[index]['status'] = "approved"
+        # 🚨 Only process if still pending
+        if deposits[index]['status'] == "pending":
+            deposits[index]['status'] = "approved"
 
-        # Update user balance
-        users = load_users()
-        user = deposits[index]['user']
-        amount = int(deposits[index]['amount'])
+            users = load_users()
+            user = deposits[index]['user']
+            amount = int(deposits[index]['amount'])
 
-        if user in users:
-            users[user]['balance'] += amount
-            save_users(users)
+            if user in users:
+                users[user]['balance'] += amount
+                save_users(users)
 
     with open("deposits.json", "w") as f:
         json.dump(deposits, f)
@@ -200,7 +200,6 @@ def reject_deposit(index):
     if 'user' not in session or session['user'] != 'Uwakmfon':
         return redirect('/login')
 
-    # Load deposits
     if not os.path.exists("deposits.json"):
         return redirect('/admin/deposits')
 
@@ -208,7 +207,9 @@ def reject_deposit(index):
         deposits = json.load(f)
 
     if index < len(deposits):
-        deposits[index]['status'] = "rejected"
+        # 🚨 Only reject if still pending
+        if deposits[index]['status'] == "pending":
+            deposits[index]['status'] = "rejected"
 
     with open("deposits.json", "w") as f:
         json.dump(deposits, f)
