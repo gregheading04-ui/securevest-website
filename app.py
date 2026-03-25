@@ -213,6 +213,19 @@ def admin_deposits():
 
     return render_template('admin_deposits.html', deposits=deposits)
 
+@app.route('/admin/withdrawals')
+def admin_withdrawals():
+    if 'user' not in session or session['user'] != 'Uwakmfon':
+        return redirect('/login')
+
+    if not os.path.exists("withdrawals.json"):
+        withdrawals = []
+    else:
+        with open("withdrawals.json", "r") as f:
+            withdrawals = json.load(f)
+
+    return render_template('admin_withdrawals.html', withdrawals=withdrawals)
+
 @app.route('/approve/<int:index>')
 def approve_deposit(index):
     if 'user' not in session or session['user'] != 'Uwakmfon':
