@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin - Withdrawals</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #0f172a;
+            color: white;
+            padding: 20px;
+        }
+
+        .card {
+            background: #1e293b;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+        }
+
+        .pending { color: orange; }
+        .approved { color: lightgreen; }
+        .rejected { color: red; }
+
+        button {
+            margin: 5px;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .approve {
+            background: green;
+            color: white;
+        }
+
+        .reject {
+            background: red;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Admin - Withdrawals</h2>
+
+{% for w in withdrawals %}
+    <div class="card">
+        <p><b>User:</b> {{ w.user }}</p>
+        <p><b>Amount:</b> ₦{{ w.amount }}</p>
+        <p><b>Bank:</b> {{ w.bank }}</p>
+        <p><b>Account:</b> {{ w.account }}</p>
+
+        <p>
+            <b>Status:</b> 
+            <span class="{{ w.status }}">{{ w.status }}</span>
+        </p>
+
+        <a href="/approve-withdraw/{{ loop.index0 }}">
+            <button class="approve">Approve</button>
+        </a>
+
+        <a href="/reject-withdraw/{{ loop.index0 }}">
+            <button class="reject">Reject</button>
+        </a>
+    </div>
+{% endfor %}
+
+</body>
+</html>
