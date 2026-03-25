@@ -171,6 +171,26 @@ def approve_deposit(index):
         json.dump(deposits, f)
 
     return redirect('/admin/deposits')
+
+@app.route('/reject/<int:index>')
+def reject_deposit(index):
+    if 'user' not in session or session['user'] != 'Uwakmfon':
+        return redirect('/login')
+
+    # Load deposits
+    if not os.path.exists("deposits.json"):
+        return redirect('/admin/deposits')
+
+    with open("deposits.json", "r") as f:
+        deposits = json.load(f)
+
+    if index < len(deposits):
+        deposits[index]['status'] = "rejected"
+
+    with open("deposits.json", "w") as f:
+        json.dump(deposits, f)
+
+    return redirect('/admin/deposits')
     
 # -------- MY DEPOSITS --------
 @app.route('/my-deposits')
