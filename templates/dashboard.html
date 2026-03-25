@@ -23,14 +23,18 @@ a {
     text-decoration:none;
     border-radius:5px;
 }
+
 .logout {
     background:red;
 }
 </style>
 </head>
 <body>
+
 <a href="/" style="color: #00ff88;"> Home</a>
+
 <h2>Welcome, {{ user }}</h2>
+
 {% with messages = get_flashed_messages() %}
   {% if messages %}
     <div style="background: green; color: white; padding: 10px; margin: 10px; border-radius: 5px;">
@@ -50,8 +54,12 @@ a {
     <a href="/deposit">Deposit</a>
     <a href="#">Withdraw</a>
     <a href="/my-deposits">My Deposits</a>
+    {% if user == "Uwakmfon" %}
+        <a href="/admin/deposits">⚙️ Admin Panel</a>
+    {% endif %}
 </div>
 
 <a href="/logout" class="logout">Logout</a>
+
 </body>
 </html>
