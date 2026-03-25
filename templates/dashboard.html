@@ -43,6 +43,12 @@ a {
   {% endif %}
 {% endwith %}
     
+{% if message %}
+    <div style="background: #1e293b; color: white; padding: 12px; margin: 10px; border-radius: 8px; font-size: 16px;">
+        {{ message }}
+    </div>
+{% endif %}
+    
 <div class="card">
     <h3>Balance</h3>
     <p>₦{{ balance }}</p>
