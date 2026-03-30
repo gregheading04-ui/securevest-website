@@ -74,32 +74,30 @@ def register():
 
 
 # -------- LOGIN --------
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    users = load_data(USERS_FILE)
+    users = load_users()
+    error = None
 
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
 
         if not username or not password:
-            return "All fields are required"
+            error = "All fields are required"
 
-        if username not in users:
-            return "User does not exist"
+        elif username not in users:
+            error = "User does not exist"
 
-        if users[username]['password'] != password:
-            return "Wrong password"
+        elif users[username]['password'] != password:
+            error = "Wrong password"
 
-        session['user'] = username
+        else:
+            session['user'] = username
+            return redirect('/dashboard')
 
-        users[username]['message'] = "Login successful"
-        save_data(USERS_FILE, users)
-
-        return redirect('/dashboard')
-
-    return render_template('login.html')
-
+    return render_template('login.html', error=error)
 
 # -------- DASHBOARD --------
 @app.route('/dashboard')
