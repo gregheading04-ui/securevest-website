@@ -1,68 +1,22 @@
-<!DOCTYPE html>
-<html>
-<head>
-<title>Withdraw</title>
-<style>
-body {
-    background:#0f172a;
-    color:white;
-    font-family:Arial;
-    text-align:center;
-    padding-top:50px;
-}
+{% extends "base.html" %}
+{% block content %}
 
-.card {
-    background:#1e293b;
-    margin:20px auto;
-    padding:20px;
-    border-radius:10px;
-    width:90%;
-    max-width:400px;
-}
-
-input {
-    width:90%;
-    padding:10px;
-    margin:10px;
-    border:none;
-    border-radius:5px;
-}
-
-button {
-    padding:10px 20px;
-    background:#22c55e;
-    color:white;
-    border:none;
-    border-radius:5px;
-    cursor:pointer;
-}
-
-.error {
-    color:red;
-}
-</style>
-</head>
-<body>
-
-<a href="/dashboard" style="color:#00ff88;">⬅ Back</a>
+<h2>Withdraw Funds</h2>
 
 <div class="card">
-    <h2>Withdraw</h2>
 
     {% if error %}
-        <p class="error">{{ error }}</p>
+        <p style="color:red;">{{ error }}</p>
     {% endif %}
 
     <form method="POST">
-        <input type="number" name="amount" placeholder="Amount" required><br>
+        <input type="number" name="amount" placeholder="Amount">
+        <input type="text" name="bank" placeholder="Bank Name">
+        <input type="text" name="account" placeholder="Account Number">
 
-        <input type="text" name="bank" placeholder="Bank Name" required><br>
-
-        <input type="text" name="account" placeholder="Account Number" required><br>
-
-        <button type="submit">Submit Withdrawal</button>
+        <button class="btn" type="submit">Submit Withdrawal</button>
     </form>
+
 </div>
 
-</body>
-</html>
+{% endblock %}
