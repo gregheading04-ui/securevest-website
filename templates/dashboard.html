@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 
-<h2>Welcome, {{ user }}</h2>
+<h2 style="text-align:center;">Welcome, {{ user }}</h2>
 
 <!-- Balance -->
 <div class="card">
@@ -9,26 +9,92 @@
     <div class="balance">₦{{ balance }}</div>
 </div>
 
-<!-- Message -->
+<!-- ✅ MESSAGE (FIXED - SHOWS ONLY ONCE) -->
 {% if message %}
-<div class="card" id="msg">
+<div class="card" id="msgBox">
     {{ message }}
-    <span onclick="document.getElementById('msg').style.display='none'" style="float:right;cursor:pointer;">✖</span>
+    <span onclick="closeMsg()" style="float:right;cursor:pointer;">✖</span>
 </div>
+
+<script>
+function closeMsg() {
+    const msg = document.getElementById("msgBox");
+    if (msg) msg.style.display = "none";
+
+    // mark as closed
+    sessionStorage.setItem("messageClosed", "yes");
+}
+
+// auto hide after 4 seconds
+setTimeout(() => {
+    closeMsg();
+}, 4000);
+
+// run after page loads
+window.onload = function () {
+    const msg = document.getElementById("msgBox");
+
+    if (sessionStorage.getItem("messageClosed") === "yes") {
+        if (msg) msg.style.display = "none";
+    } else {
+        // allow new messages to show
+        sessionStorage.removeItem("messageClosed");
+    }
+};
+</script>
 {% endif %}
 
 <!-- Actions -->
 <div class="card">
-    <a href="/deposit" class="btn"> Deposit</a>
-    <a href="/withdraw" class="btn"> Withdraw</a>
-    <a href="/my-deposits" class="btn"> My Deposits</a>
+    <h3>Actions</h3>
+
+    <a href="/deposit">Deposit</a>
+    <a href="/withdraw">Withdraw</a>
+    <a href="/my-deposits">My Deposits</a>
 
     {% if user == "Uwakmfon" %}
-        <a href="/admin/deposits" class="btn"> Admin Deposits</a>
-        <a href="/admin/withdrawals" class="btn"> Admin Withdrawals</a>
+        <a href="/admin/deposits">Admin Deposits</a>
+        <a href="/admin/withdrawals">Admin Withdrawals</a>
     {% endif %}
-
-    <a href="/logout" class="btn btn-danger">Logout</a>
 </div>
+
+<a href="/logout" class="logout">Logout</a>
+
+<style>
+body {
+    background: #0f172a;
+    color: white;
+    font-family: Arial;
+    padding: 20px;
+}
+
+.card {
+    background: #1e293b;
+    margin: 20px 0;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.balance {
+    font-size: 40px;
+    font-weight: bold;
+    color: #22c55e;
+}
+
+a {
+    display: block;
+    margin: 10px 0;
+    padding: 15px;
+    background: #22c55e;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.logout {
+    background: red;
+}
+</style>
 
 {% endblock %}
