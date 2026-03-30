@@ -1,6 +1,6 @@
 import json
 import os
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, flash
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
@@ -11,90 +11,76 @@ WITHDRAWALS_FILE = "withdrawals.json"
 
 ADMIN_USERNAME = "Uwakmfon"
 
-
-# -------- LOAD & SAVE --------
-def load_data(file):
+# -------- SAFE LOAD --------
+def load_json(file):
     if not os.path.exists(file):
-        return [] if "deposits" in file or "withdrawals" in file else {}
-    with open(file, "r") as f:
-        return json.load(f)
+        return {} if "users" in file else []
+    try:
+        with open(file, "r") as f:
+            return json.load(f)
+    except:
+        return {} if "users" in file else []
 
-
-def save_data(file, data):
+# -------- SAVE --------
+def save_json(file, data):
     with open(file, "w") as f:
-        json.dump(data, f)
-
+        json.dump(data, f, indent=4)
 
 # -------- HOME --------
 @app.route('/')
 def home():
     return render_template('index.html')
 
-
 # -------- REGISTER --------
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    users = load_data(USERS_FILE)
-
-    if request.method == 'POST':
-        fullname = request.form.get('fullname')
-        username = request.form.get('username')
-        email = request.form.get('email')
-        phone = request.form.get('phone')
-        password = request.form.get('password')
-        confirm = request.form.get('confirm')
-
-        if not all([fullname, username, email, phone, password, confirm]):
-            return "All fields are required"
-
-        if password != confirm:
-            return "Passwords do not match"
-
-        if username in users:
-            return "Username already exists"
-
-        users[username] = {
-            "fullname": fullname,
-            "email": email,
-            "phone": phone,
-            "password": password,
-            "balance": 0,
-            "message": ""
-        }
-
-        save_data(USERS_FILE, users)
-        session['user'] = username
-
-        users[username]['message'] = "Registration successful"
-        save_data(USERS_FILE, users)
-
-        return redirect('/dashboard')
-
-    return render_template('register.html')
-
-
-# -------- LOGIN --------
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    users = load_users()
-    error = None
+    users = load_json(USERS_FILE)
 
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
 
         if not username or not password:
+            return "All fields required"
+
+        if username in users:
+            return "User already exists"
+
+        users[username] = {
+            "password": password,
+            "balance": 0
+        }
+
+        save_json(USERS_FILE, users)
+        session['user'] = username
+        flash("Registration successful")
+
+        return redirect('/dashboard')
+
+    return render_template('register.html')
+
+# -------- LOGIN --------
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    users = load_json(USERS_FILE)
+    error = None
+
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '').strip()
+
+        if username == "" or password == "":
             error = "All fields are required"
 
         elif username not in users:
             error = "User does not exist"
 
-        elif users[username]['password'] != password:
+        elif users[username].get('password') != password:
             error = "Wrong password"
 
         else:
             session['user'] = username
+            flash("Login successful")
             return redirect('/dashboard')
 
     return render_template('login.html', error=error)
@@ -105,24 +91,17 @@ def dashboard():
     if 'user' not in session:
         return redirect('/login')
 
-    users = load_data(USERS_FILE)
+    users = load_json(USERS_FILE)
     user = session['user']
+    balance = users.get(user, {}).get("balance", 0)
 
-    balance = users.get(user, {}).get('balance', 0)
+    message = None
+    messages = session.pop('_flashes', [])
 
-    message = users[user].get('message')
+    if messages:
+        message = messages[0][1]
 
-    # clear message after showing once
-    users[user]['message'] = ""
-    save_data(USERS_FILE, users)
-
-    return render_template(
-        'dashboard.html',
-        user=user,
-        balance=balance,
-        message=message
-    )
-
+    return render_template('dashboard.html', user=user, balance=balance, message=message)
 
 # -------- DEPOSIT --------
 @app.route('/deposit', methods=['GET', 'POST'])
@@ -132,26 +111,20 @@ def deposit():
 
     if request.method == 'POST':
         amount = request.form.get('amount')
-        user = session['user']
-
-        deposits = load_data(DEPOSITS_FILE)
+        deposits = load_json(DEPOSITS_FILE)
 
         deposits.append({
-            "user": user,
+            "user": session['user'],
             "amount": amount,
             "status": "pending"
         })
 
-        save_data(DEPOSITS_FILE, deposits)
+        save_json(DEPOSITS_FILE, deposits)
 
-        users = load_data(USERS_FILE)
-        users[user]['message'] = "Deposit submitted. Await confirmation"
-        save_data(USERS_FILE, users)
-
+        flash("Deposit submitted. Await confirmation")
         return redirect('/dashboard')
 
     return render_template('deposit.html')
-
 
 # -------- MY DEPOSITS --------
 @app.route('/my-deposits')
@@ -159,13 +132,57 @@ def my_deposits():
     if 'user' not in session:
         return redirect('/login')
 
-    user = session['user']
-    deposits = load_data(DEPOSITS_FILE)
-
-    user_deposits = [d for d in deposits if d['user'] == user]
+    deposits = load_json(DEPOSITS_FILE)
+    user_deposits = [d for d in deposits if d['user'] == session['user']]
 
     return render_template('my_deposits.html', deposits=user_deposits)
 
+# -------- ADMIN DEPOSITS --------
+@app.route('/admin/deposits')
+def admin_deposits():
+    if session.get('user') != ADMIN_USERNAME:
+        return redirect('/dashboard')
+
+    deposits = load_json(DEPOSITS_FILE)
+    return render_template('admin_deposits.html', deposits=deposits)
+
+# -------- APPROVE DEPOSIT --------
+@app.route('/approve-deposit/<int:index>')
+def approve_deposit(index):
+    if session.get('user') != ADMIN_USERNAME:
+        return redirect('/dashboard')
+
+    deposits = load_json(DEPOSITS_FILE)
+    users = load_json(USERS_FILE)
+
+    if 0 <= index < len(deposits):
+        d = deposits[index]
+        d['status'] = "approved"
+
+        user = d['user']
+        amount = int(d['amount'])
+
+        users[user]['balance'] += amount
+
+    save_json(DEPOSITS_FILE, deposits)
+    save_json(USERS_FILE, users)
+
+    return redirect('/admin/deposits')
+
+# -------- REJECT DEPOSIT --------
+@app.route('/reject-deposit/<int:index>')
+def reject_deposit(index):
+    if session.get('user') != ADMIN_USERNAME:
+        return redirect('/dashboard')
+
+    deposits = load_json(DEPOSITS_FILE)
+
+    if 0 <= index < len(deposits):
+        deposits[index]['status'] = "rejected"
+
+    save_json(DEPOSITS_FILE, deposits)
+
+    return redirect('/admin/deposits')
 
 # -------- WITHDRAW --------
 @app.route('/withdraw', methods=['GET', 'POST'])
@@ -173,166 +190,82 @@ def withdraw():
     if 'user' not in session:
         return redirect('/login')
 
-    users = load_data(USERS_FILE)
-    user = session['user']
-
     if request.method == 'POST':
-        amount = request.form.get('amount')
-        bank = request.form.get('bank')
-        account = request.form.get('account')
+        amount = int(request.form.get('amount'))
+        users = load_json(USERS_FILE)
 
-        if not amount or not bank or not account:
-            return "All fields are required"
+        if users[session['user']]['balance'] < amount:
+            flash("Insufficient balance")
+            return redirect('/dashboard')
 
-        amount = int(amount)
-
-        if amount > users[user]['balance']:
-            return "Insufficient balance"
-
-        withdrawals = load_data(WITHDRAWALS_FILE)
+        withdrawals = load_json(WITHDRAWALS_FILE)
 
         withdrawals.append({
-            "user": user,
+            "user": session['user'],
             "amount": amount,
-            "bank": bank,
-            "account": account,
             "status": "pending"
         })
 
-        save_data(WITHDRAWALS_FILE, withdrawals)
+        save_json(WITHDRAWALS_FILE, withdrawals)
 
-        users[user]['message'] = "Withdrawal request submitted"
-        save_data(USERS_FILE, users)
-
+        flash("Withdrawal request submitted")
         return redirect('/dashboard')
 
     return render_template('withdraw.html')
 
-
-# -------- ADMIN DEPOSITS --------
-@app.route('/admin/deposits')
-def admin_deposits():
-    if 'user' not in session or session['user'] != ADMIN_USERNAME:
-        return redirect('/login')
-
-    deposits = load_data(DEPOSITS_FILE)
-    return render_template('admin_deposits.html', deposits=deposits)
-
-
-# -------- APPROVE DEPOSIT --------
-@app.route('/approve/<int:index>')
-def approve(index):
-    if 'user' not in session or session['user'] != ADMIN_USERNAME:
-        return redirect('/login')
-
-    deposits = load_data(DEPOSITS_FILE)
-    users = load_data(USERS_FILE)
-
-    if index < len(deposits):
-        if deposits[index]['status'] == "pending":
-            user = deposits[index]['user']
-            amount = int(deposits[index]['amount'])
-
-            if user in users:
-                users[user]['balance'] += amount
-                deposits[index]['status'] = "approved"
-
-                users[user]['message'] = "Your deposit has been approved"
-
-    save_data(DEPOSITS_FILE, deposits)
-    save_data(USERS_FILE, users)
-
-    return redirect('/admin/deposits')
-
-
-# -------- REJECT DEPOSIT --------
-@app.route('/reject/<int:index>')
-def reject(index):
-    if 'user' not in session or session['user'] != ADMIN_USERNAME:
-        return redirect('/login')
-
-    deposits = load_data(DEPOSITS_FILE)
-    users = load_data(USERS_FILE)
-
-    if index < len(deposits):
-        if deposits[index]['status'] == "pending":
-            user = deposits[index]['user']
-            deposits[index]['status'] = "rejected"
-
-            if user in users:
-                users[user]['message'] = "Your deposit was rejected"
-
-    save_data(DEPOSITS_FILE, deposits)
-    save_data(USERS_FILE, users)
-
-    return redirect('/admin/deposits')
-
-
 # -------- ADMIN WITHDRAWALS --------
 @app.route('/admin/withdrawals')
 def admin_withdrawals():
-    if 'user' not in session or session['user'] != ADMIN_USERNAME:
-        return redirect('/login')
+    if session.get('user') != ADMIN_USERNAME:
+        return redirect('/dashboard')
 
-    withdrawals = load_data(WITHDRAWALS_FILE)
+    withdrawals = load_json(WITHDRAWALS_FILE)
     return render_template('admin_withdrawals.html', withdrawals=withdrawals)
-
 
 # -------- APPROVE WITHDRAW --------
 @app.route('/approve-withdraw/<int:index>')
 def approve_withdraw(index):
-    if 'user' not in session or session['user'] != ADMIN_USERNAME:
-        return redirect('/login')
+    if session.get('user') != ADMIN_USERNAME:
+        return redirect('/dashboard')
 
-    withdrawals = load_data(WITHDRAWALS_FILE)
-    users = load_data(USERS_FILE)
+    withdrawals = load_json(WITHDRAWALS_FILE)
+    users = load_json(USERS_FILE)
 
-    if index < len(withdrawals):
-        if withdrawals[index]['status'] == "pending":
-            user = withdrawals[index]['user']
-            amount = int(withdrawals[index]['amount'])
+    if 0 <= index < len(withdrawals):
+        w = withdrawals[index]
+        w['status'] = "approved"
 
-            if user in users and users[user]['balance'] >= amount:
-                users[user]['balance'] -= amount
-                withdrawals[index]['status'] = "approved"
+        user = w['user']
+        amount = int(w['amount'])
 
-                users[user]['message'] = "Your withdrawal has been approved"
+        users[user]['balance'] -= amount
 
-    save_data(WITHDRAWALS_FILE, withdrawals)
-    save_data(USERS_FILE, users)
+    save_json(WITHDRAWALS_FILE, withdrawals)
+    save_json(USERS_FILE, users)
 
     return redirect('/admin/withdrawals')
-
 
 # -------- REJECT WITHDRAW --------
 @app.route('/reject-withdraw/<int:index>')
 def reject_withdraw(index):
-    if 'user' not in session or session['user'] != ADMIN_USERNAME:
-        return redirect('/login')
+    if session.get('user') != ADMIN_USERNAME:
+        return redirect('/dashboard')
 
-    withdrawals = load_data(WITHDRAWALS_FILE)
-    users = load_data(USERS_FILE)
+    withdrawals = load_json(WITHDRAWALS_FILE)
 
-    if index < len(withdrawals):
-        if withdrawals[index]['status'] == "pending":
-            user = withdrawals[index]['user']
-            withdrawals[index]['status'] = "rejected"
+    if 0 <= index < len(withdrawals):
+        withdrawals[index]['status'] = "rejected"
 
-            if user in users:
-                users[user]['message'] = "Your withdrawal was rejected"
-
-    save_data(WITHDRAWALS_FILE, withdrawals)
-    save_data(USERS_FILE, users)
+    save_json(WITHDRAWALS_FILE, withdrawals)
 
     return redirect('/admin/withdrawals')
-
 
 # -------- LOGOUT --------
 @app.route('/logout')
 def logout():
     session.pop('user', None)
-    return redirect('/')
-
+    flash("Logged out successfully")
+    return redirect('/login')
 
 # -------- RUN --------
 if __name__ == "__main__":
