@@ -1,30 +1,54 @@
-import json
+import sqlite3
 import os
 from flask import Flask, render_template, request, redirect, session, flash
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
 
-USERS_FILE = "users.json"
-DEPOSITS_FILE = "deposits.json"
-WITHDRAWALS_FILE = "withdrawals.json"
-
 ADMIN_USERNAME = "Uwakmfon"
+DB_FILE = "database.db"
 
-# -------- SAFE LOAD --------
-def load_json(file):
-    if not os.path.exists(file):
-        return {} if "users" in file else []
-    try:
-        with open(file, "r") as f:
-            return json.load(f)
-    except:
-        return {} if "users" in file else []
+# -------- DB CONNECT --------
+def get_db():
+    conn = sqlite3.connect(DB_FILE)
+    conn.row_factory = sqlite3.Row
+    return conn
 
-# -------- SAVE --------
-def save_json(file, data):
-    with open(file, "w") as f:
-        json.dump(data, f, indent=4)
+# -------- CREATE TABLES --------
+def init_db():
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        username TEXT PRIMARY KEY,
+        password TEXT,
+        balance INTEGER DEFAULT 0
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS deposits (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user TEXT,
+        amount INTEGER,
+        status TEXT
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS withdrawals (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user TEXT,
+        amount INTEGER,
+        status TEXT
+    )
+    """)
+
+    conn.commit()
+    conn.close()
+
+init_db()
 
 # -------- HOME --------
 @app.route('/')
@@ -34,27 +58,24 @@ def home():
 # -------- REGISTER --------
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    users = load_json(USERS_FILE)
-
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
 
-        if not username or not password:
-            return "All fields required"
+        conn = get_db()
+        cur = conn.cursor()
 
-        if username in users:
+        # check user
+        cur.execute("SELECT * FROM users WHERE username=?", (username,))
+        if cur.fetchone():
             return "User already exists"
 
-        users[username] = {
-            "password": password,
-            "balance": 0
-        }
+        cur.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password))
+        conn.commit()
+        conn.close()
 
-        save_json(USERS_FILE, users)
         session['user'] = username
         flash("Registration successful")
-
         return redirect('/dashboard')
 
     return render_template('register.html')
@@ -62,20 +83,25 @@ def register():
 # -------- LOGIN --------
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    users = load_json(USERS_FILE)
     error = None
 
     if request.method == 'POST':
-        username = request.form.get('username', '').strip()
-        password = request.form.get('password', '').strip()
+        username = request.form.get('username')
+        password = request.form.get('password')
 
-        if username == "" or password == "":
-            error = "All fields are required"
+        conn = get_db()
+        cur = conn.cursor()
 
-        elif username not in users:
+        cur.execute("SELECT * FROM users WHERE username=?", (username,))
+        user = cur.fetchone()
+
+        if not username or not password:
+            error = "All fields required"
+
+        elif not user:
             error = "User does not exist"
 
-        elif users[username].get('password') != password:
+        elif user["password"] != password:
             error = "Wrong password"
 
         else:
@@ -91,17 +117,20 @@ def dashboard():
     if 'user' not in session:
         return redirect('/login')
 
-    users = load_json(USERS_FILE)
-    user = session['user']
-    balance = users.get(user, {}).get("balance", 0)
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("SELECT balance FROM users WHERE username=?", (session['user'],))
+    user = cur.fetchone()
+
+    balance = user["balance"] if user else 0
 
     message = None
     messages = session.pop('_flashes', [])
-
     if messages:
         message = messages[0][1]
 
-    return render_template('dashboard.html', user=user, balance=balance, message=message)
+    return render_template('dashboard.html', user=session['user'], balance=balance, message=message)
 
 # -------- DEPOSIT --------
 @app.route('/deposit', methods=['GET', 'POST'])
@@ -110,32 +139,21 @@ def deposit():
         return redirect('/login')
 
     if request.method == 'POST':
-        amount = request.form.get('amount')
-        deposits = load_json(DEPOSITS_FILE)
+        amount = int(request.form.get('amount'))
 
-        deposits.append({
-            "user": session['user'],
-            "amount": amount,
-            "status": "pending"
-        })
+        conn = get_db()
+        cur = conn.cursor()
 
-        save_json(DEPOSITS_FILE, deposits)
+        cur.execute("INSERT INTO deposits (user, amount, status) VALUES (?, ?, ?)",
+                    (session['user'], amount, "pending"))
 
-        flash("Deposit submitted. Await confirmation")
+        conn.commit()
+        conn.close()
+
+        flash("Deposit submitted")
         return redirect('/dashboard')
 
     return render_template('deposit.html')
-
-# -------- MY DEPOSITS --------
-@app.route('/my-deposits')
-def my_deposits():
-    if 'user' not in session:
-        return redirect('/login')
-
-    deposits = load_json(DEPOSITS_FILE)
-    user_deposits = [d for d in deposits if d['user'] == session['user']]
-
-    return render_template('my_deposits.html', deposits=user_deposits)
 
 # -------- ADMIN DEPOSITS --------
 @app.route('/admin/deposits')
@@ -143,44 +161,47 @@ def admin_deposits():
     if session.get('user') != ADMIN_USERNAME:
         return redirect('/dashboard')
 
-    deposits = load_json(DEPOSITS_FILE)
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM deposits")
+    deposits = cur.fetchall()
+
     return render_template('admin_deposits.html', deposits=deposits)
 
 # -------- APPROVE DEPOSIT --------
-@app.route('/approve-deposit/<int:index>')
-def approve_deposit(index):
+@app.route('/approve-deposit/<int:id>')
+def approve_deposit(id):
     if session.get('user') != ADMIN_USERNAME:
         return redirect('/dashboard')
 
-    deposits = load_json(DEPOSITS_FILE)
-    users = load_json(USERS_FILE)
+    conn = get_db()
+    cur = conn.cursor()
 
-    if 0 <= index < len(deposits):
-        d = deposits[index]
-        d['status'] = "approved"
+    cur.execute("SELECT * FROM deposits WHERE id=?", (id,))
+    d = cur.fetchone()
 
-        user = d['user']
-        amount = int(d['amount'])
+    if d:
+        cur.execute("UPDATE deposits SET status='approved' WHERE id=?", (id,))
+        cur.execute("UPDATE users SET balance = balance + ? WHERE username=?", (d["amount"], d["user"]))
 
-        users[user]['balance'] += amount
-
-    save_json(DEPOSITS_FILE, deposits)
-    save_json(USERS_FILE, users)
+    conn.commit()
+    conn.close()
 
     return redirect('/admin/deposits')
 
 # -------- REJECT DEPOSIT --------
-@app.route('/reject-deposit/<int:index>')
-def reject_deposit(index):
+@app.route('/reject-deposit/<int:id>')
+def reject_deposit(id):
     if session.get('user') != ADMIN_USERNAME:
         return redirect('/dashboard')
 
-    deposits = load_json(DEPOSITS_FILE)
+    conn = get_db()
+    cur = conn.cursor()
 
-    if 0 <= index < len(deposits):
-        deposits[index]['status'] = "rejected"
-
-    save_json(DEPOSITS_FILE, deposits)
+    cur.execute("UPDATE deposits SET status='rejected' WHERE id=?", (id,))
+    conn.commit()
+    conn.close()
 
     return redirect('/admin/deposits')
 
@@ -192,71 +213,75 @@ def withdraw():
 
     if request.method == 'POST':
         amount = int(request.form.get('amount'))
-        users = load_json(USERS_FILE)
 
-        if users[session['user']]['balance'] < amount:
+        conn = get_db()
+        cur = conn.cursor()
+
+        cur.execute("SELECT balance FROM users WHERE username=?", (session['user'],))
+        user = cur.fetchone()
+
+        if user["balance"] < amount:
             flash("Insufficient balance")
             return redirect('/dashboard')
 
-        withdrawals = load_json(WITHDRAWALS_FILE)
+        cur.execute("INSERT INTO withdrawals (user, amount, status) VALUES (?, ?, ?)",
+                    (session['user'], amount, "pending"))
 
-        withdrawals.append({
-            "user": session['user'],
-            "amount": amount,
-            "status": "pending"
-        })
+        conn.commit()
+        conn.close()
 
-        save_json(WITHDRAWALS_FILE, withdrawals)
-
-        flash("Withdrawal request submitted")
+        flash("Withdrawal submitted")
         return redirect('/dashboard')
 
     return render_template('withdraw.html')
 
-# -------- ADMIN WITHDRAWALS --------
+# -------- ADMIN WITHDRAW --------
 @app.route('/admin/withdrawals')
 def admin_withdrawals():
     if session.get('user') != ADMIN_USERNAME:
         return redirect('/dashboard')
 
-    withdrawals = load_json(WITHDRAWALS_FILE)
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM withdrawals")
+    withdrawals = cur.fetchall()
+
     return render_template('admin_withdrawals.html', withdrawals=withdrawals)
 
 # -------- APPROVE WITHDRAW --------
-@app.route('/approve-withdraw/<int:index>')
-def approve_withdraw(index):
+@app.route('/approve-withdraw/<int:id>')
+def approve_withdraw(id):
     if session.get('user') != ADMIN_USERNAME:
         return redirect('/dashboard')
 
-    withdrawals = load_json(WITHDRAWALS_FILE)
-    users = load_json(USERS_FILE)
+    conn = get_db()
+    cur = conn.cursor()
 
-    if 0 <= index < len(withdrawals):
-        w = withdrawals[index]
-        w['status'] = "approved"
+    cur.execute("SELECT * FROM withdrawals WHERE id=?", (id,))
+    w = cur.fetchone()
 
-        user = w['user']
-        amount = int(w['amount'])
+    if w:
+        cur.execute("UPDATE withdrawals SET status='approved' WHERE id=?", (id,))
+        cur.execute("UPDATE users SET balance = balance - ? WHERE username=?", (w["amount"], w["user"]))
 
-        users[user]['balance'] -= amount
-
-    save_json(WITHDRAWALS_FILE, withdrawals)
-    save_json(USERS_FILE, users)
+    conn.commit()
+    conn.close()
 
     return redirect('/admin/withdrawals')
 
 # -------- REJECT WITHDRAW --------
-@app.route('/reject-withdraw/<int:index>')
-def reject_withdraw(index):
+@app.route('/reject-withdraw/<int:id>')
+def reject_withdraw(id):
     if session.get('user') != ADMIN_USERNAME:
         return redirect('/dashboard')
 
-    withdrawals = load_json(WITHDRAWALS_FILE)
+    conn = get_db()
+    cur = conn.cursor()
 
-    if 0 <= index < len(withdrawals):
-        withdrawals[index]['status'] = "rejected"
-
-    save_json(WITHDRAWALS_FILE, withdrawals)
+    cur.execute("UPDATE withdrawals SET status='rejected' WHERE id=?", (id,))
+    conn.commit()
+    conn.close()
 
     return redirect('/admin/withdrawals')
 
@@ -264,7 +289,7 @@ def reject_withdraw(index):
 @app.route('/logout')
 def logout():
     session.pop('user', None)
-    flash("Logged out successfully")
+    flash("Logged out")
     return redirect('/login')
 
 # -------- RUN --------
