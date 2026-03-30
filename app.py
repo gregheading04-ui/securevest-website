@@ -1,6 +1,6 @@
 import json
 import os
-from flask import Flask, render_template, request, redirect, session, flash
+from flask import Flask, render_template, request, redirect, session
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
@@ -45,29 +45,29 @@ def register():
         confirm = request.form.get('confirm')
 
         if not all([fullname, username, email, phone, password, confirm]):
-            flash("All fields are required")
-            return redirect('/register')
+            return "All fields are required"
 
         if password != confirm:
-            flash("Passwords do not match")
-            return redirect('/register')
+            return "Passwords do not match"
 
         if username in users:
-            flash("Username already exists")
-            return redirect('/register')
+            return "Username already exists"
 
         users[username] = {
             "fullname": fullname,
             "email": email,
             "phone": phone,
             "password": password,
-            "balance": 0
+            "balance": 0,
+            "message": ""
         }
 
         save_data(USERS_FILE, users)
         session['user'] = username
 
-        flash("Registration successful")
+        users[username]['message'] = "Registration successful"
+        save_data(USERS_FILE, users)
+
         return redirect('/dashboard')
 
     return render_template('register.html')
@@ -83,19 +83,19 @@ def login():
         password = request.form.get('password')
 
         if not username or not password:
-            flash("All fields are required")
-            return redirect('/login')
+            return "All fields are required"
 
         if username not in users:
-            flash("User does not exist")
-            return redirect('/login')
+            return "User does not exist"
 
         if users[username]['password'] != password:
-            flash("Wrong password")
-            return redirect('/login')
+            return "Wrong password"
 
         session['user'] = username
-        flash("Login successful")
+
+        users[username]['message'] = "Login successful"
+        save_data(USERS_FILE, users)
+
         return redirect('/dashboard')
 
     return render_template('login.html')
@@ -112,7 +112,18 @@ def dashboard():
 
     balance = users.get(user, {}).get('balance', 0)
 
-    return render_template('dashboard.html', user=user, balance=balance)
+    message = users[user].get('message')
+
+    # clear message after showing once
+    users[user]['message'] = ""
+    save_data(USERS_FILE, users)
+
+    return render_template(
+        'dashboard.html',
+        user=user,
+        balance=balance,
+        message=message
+    )
 
 
 # -------- DEPOSIT --------
@@ -135,7 +146,10 @@ def deposit():
 
         save_data(DEPOSITS_FILE, deposits)
 
-        flash("Deposit submitted. Await confirmation")
+        users = load_data(USERS_FILE)
+        users[user]['message'] = "Deposit submitted. Await confirmation"
+        save_data(USERS_FILE, users)
+
         return redirect('/dashboard')
 
     return render_template('deposit.html')
@@ -163,7 +177,6 @@ def withdraw():
 
     users = load_data(USERS_FILE)
     user = session['user']
-    error = None
 
     if request.method == 'POST':
         amount = request.form.get('amount')
@@ -171,30 +184,31 @@ def withdraw():
         account = request.form.get('account')
 
         if not amount or not bank or not account:
-            error = "All fields are required"
+            return "All fields are required"
 
-        else:
-            amount = int(amount)
+        amount = int(amount)
 
-            if amount > users[user]['balance']:
-                error = "Insufficient balance"
-            else:
-                withdrawals = load_data(WITHDRAWALS_FILE)
+        if amount > users[user]['balance']:
+            return "Insufficient balance"
 
-                withdrawals.append({
-                    "user": user,
-                    "amount": amount,
-                    "bank": bank,
-                    "account": account,
-                    "status": "pending"
-                })
+        withdrawals = load_data(WITHDRAWALS_FILE)
 
-                save_data(WITHDRAWALS_FILE, withdrawals)
+        withdrawals.append({
+            "user": user,
+            "amount": amount,
+            "bank": bank,
+            "account": account,
+            "status": "pending"
+        })
 
-                flash("Withdrawal request submitted")
-                return redirect('/dashboard')
+        save_data(WITHDRAWALS_FILE, withdrawals)
 
-    return render_template('withdraw.html', error=error)
+        users[user]['message'] = "Withdrawal request submitted"
+        save_data(USERS_FILE, users)
+
+        return redirect('/dashboard')
+
+    return render_template('withdraw.html')
 
 
 # -------- ADMIN DEPOSITS --------
@@ -225,10 +239,11 @@ def approve(index):
                 users[user]['balance'] += amount
                 deposits[index]['status'] = "approved"
 
+                users[user]['message'] = "Your deposit has been approved"
+
     save_data(DEPOSITS_FILE, deposits)
     save_data(USERS_FILE, users)
 
-    flash("Deposit approved")
     return redirect('/admin/deposits')
 
 
@@ -239,14 +254,19 @@ def reject(index):
         return redirect('/login')
 
     deposits = load_data(DEPOSITS_FILE)
+    users = load_data(USERS_FILE)
 
     if index < len(deposits):
         if deposits[index]['status'] == "pending":
+            user = deposits[index]['user']
             deposits[index]['status'] = "rejected"
 
-    save_data(DEPOSITS_FILE, deposits)
+            if user in users:
+                users[user]['message'] = "Your deposit was rejected"
 
-    flash("Deposit rejected")
+    save_data(DEPOSITS_FILE, deposits)
+    save_data(USERS_FILE, users)
+
     return redirect('/admin/deposits')
 
 
@@ -278,10 +298,11 @@ def approve_withdraw(index):
                 users[user]['balance'] -= amount
                 withdrawals[index]['status'] = "approved"
 
+                users[user]['message'] = "Your withdrawal has been approved"
+
     save_data(WITHDRAWALS_FILE, withdrawals)
     save_data(USERS_FILE, users)
 
-    flash("Withdrawal approved")
     return redirect('/admin/withdrawals')
 
 
@@ -292,14 +313,19 @@ def reject_withdraw(index):
         return redirect('/login')
 
     withdrawals = load_data(WITHDRAWALS_FILE)
+    users = load_data(USERS_FILE)
 
     if index < len(withdrawals):
         if withdrawals[index]['status'] == "pending":
+            user = withdrawals[index]['user']
             withdrawals[index]['status'] = "rejected"
 
-    save_data(WITHDRAWALS_FILE, withdrawals)
+            if user in users:
+                users[user]['message'] = "Your withdrawal was rejected"
 
-    flash("Withdrawal rejected")
+    save_data(WITHDRAWALS_FILE, withdrawals)
+    save_data(USERS_FILE, users)
+
     return redirect('/admin/withdrawals')
 
 
@@ -307,7 +333,6 @@ def reject_withdraw(index):
 @app.route('/logout')
 def logout():
     session.pop('user', None)
-    flash("Logged out successfully")
     return redirect('/')
 
 
