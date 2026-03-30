@@ -3,6 +3,19 @@
 
 <h2>Admin - Deposits</h2>
 
+<!-- Flash Message -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, msg in messages %}
+      <div class="card" id="flashMsg">
+        {{ msg }}
+        <span onclick="document.getElementById('flashMsg').style.display='none'" 
+              style="float:right;cursor:pointer;">✖</span>
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
 {% for d in deposits %}
 <div class="card">
 
@@ -29,5 +42,12 @@
 
 </div>
 {% endfor %}
+
+<script>
+setTimeout(function(){
+    var msg = document.getElementById("flashMsg");
+    if(msg){ msg.style.display = "none"; }
+}, 4000);
+</script>
 
 {% endblock %}
