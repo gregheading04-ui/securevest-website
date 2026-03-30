@@ -141,11 +141,18 @@ def deposit():
     if request.method == 'POST':
         amount = int(request.form.get('amount'))
 
+        # ✅ Minimum check
+        if amount < 2000:
+            flash("Minimum deposit is ₦2000")
+            return redirect('/dashboard')
+
         conn = get_db()
         cur = conn.cursor()
 
-        cur.execute("INSERT INTO deposits (user, amount, status) VALUES (?, ?, ?)",
-                    (session['user'], amount, "pending"))
+        cur.execute(
+            "INSERT INTO deposits (user, amount, status) VALUES (?, ?, ?)",
+            (session['user'], amount, "pending")
+        )
 
         conn.commit()
         conn.close()
@@ -154,6 +161,20 @@ def deposit():
         return redirect('/dashboard')
 
     return render_template('deposit.html')
+
+# -------- MY DEPOSITS --------
+@app.route('/my-deposits')
+def my_deposits():
+    if 'user' not in session:
+        return redirect('/login')
+
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("SELECT * FROM deposits WHERE user=?", (session['user'],))
+    deposits = cur.fetchall()
+
+    return render_template('my_deposits.html', deposits=deposits)
 
 # -------- ADMIN DEPOSITS --------
 @app.route('/admin/deposits')
