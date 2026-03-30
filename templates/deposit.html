@@ -1,94 +1,46 @@
-<!DOCTYPE html>
-<html>
-<head>
-<title>Deposit</title>
+{% extends "base.html" %}
+{% block content %}
 
-<style>
-body {
-    background:#0f172a;
-    color:white;
-    font-family:Arial;
-    text-align:center;
-    padding:20px;
-}
+<h2 style="text-align:center;">Deposit</h2>
 
-.amount-btn {
-    display:block;
-    width:200px;
-    margin:10px auto;
-    padding:12px;
-    background:#22c55e;
-    border:none;
-    border-radius:6px;
-    color:white;
-    font-size:16px;
-    cursor:pointer;
-}
+<div class="card">
 
-.box {
-    margin-top:20px;
-    padding:20px;
-    background:#1e293b;
-    border-radius:10px;
-}
+    <form method="POST">
+        <input type="number" name="amount" placeholder="Enter amount" required>
 
-input, button {
-    padding:10px;
-    margin-top:10px;
-    border-radius:5px;
-    border:none;
-}
-
-a {
-    color:#00ff88;
-}
-</style>
-
-<script>
-function selectAmount(amount) {
-    document.getElementById("selectedAmount").innerText = "₦" + amount;
-    document.getElementById("amountInput").value = amount;
-    document.getElementById("paymentBox").style.display = "block";
-}
-</script>
-
-</head>
-
-<body>
-
-<a href="/dashboard">⬅ Back to Dashboard</a>
-
-<h2>Select Deposit Amount</h2>
-
-<button class="amount-btn" onclick="selectAmount(2000)">₦2,000</button>
-<button class="amount-btn" onclick="selectAmount(3000)">₦3,000</button>
-<button class="amount-btn" onclick="selectAmount(5000)">₦5,000</button>
-<button class="amount-btn" onclick="selectAmount(10000)">₦10,000</button>
-<button class="amount-btn" onclick="selectAmount(20000)">₦20,000</button>
-<button class="amount-btn" onclick="selectAmount(30000)">₦30,000</button>
-<button class="amount-btn" onclick="selectAmount(50000)">₦50,000</button>
-<button class="amount-btn" onclick="selectAmount(100000)">₦100,000</button>
-
-<!-- PAYMENT SECTION -->
-<div id="paymentBox" class="box" style="display:none;">
-
-<h3>Send Payment</h3>
-
-<p><b>Bank:</b> Wema Bank</p>
-<p><b>Account Number:</b> 7650624571</p>
-
-<p>You selected: <span id="selectedAmount"></span></p>
-
-<form method="POST" enctype="multipart/form-data">
-<input type="hidden" name="amount" id="amountInput">
-
-<p>Upload payment proof (optional)</p>
-<input type="file" name="proof"><br>
-
-<button type="submit">I Have Made Payment</button>
-</form>
+        <button class="btn" type="submit">Submit Deposit</button>
+    </form>
 
 </div>
 
-</body>
-</html>
+<style>
+.card {
+    background:#1e293b;
+    padding:20px;
+    border-radius:15px;
+    width:90%;
+    max-width:420px;
+    margin:20px auto;
+}
+
+input {
+    width:100%;
+    padding:14px;
+    margin:12px 0;
+    border-radius:8px;
+    border:none;
+    font-size:16px;
+}
+
+.btn {
+    width:100%;
+    padding:14px;
+    background:linear-gradient(135deg,#22c55e,#16a34a);
+    color:white;
+    border:none;
+    border-radius:10px;
+    font-size:18px;
+}
+</style>
+
+{% endblock %}
