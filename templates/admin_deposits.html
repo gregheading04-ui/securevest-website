@@ -1,75 +1,33 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Admin - Deposits</title>
-    <style>
-        body {
-            font-family: Arial;
-            background: #0f172a;
-            color: white;
-            padding: 20px;
-        }
+{% extends "base.html" %}
+{% block content %}
 
-        .card {
-            background: #1e293b;
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 8px;
-        }
-
-        .pending {
-            color: orange;
-        }
-
-        .approved {
-            color: lightgreen;
-        }
-
-        .rejected {
-            color: red;
-        }
-
-        button {
-            margin: 5px;
-            padding: 5px 10px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .approve {
-            background: green;
-            color: white;
-        }
-
-        .reject {
-            background: red;
-            color: white;
-        }
-    </style>
-</head>
-<body>
-
-<h2>Admin - All Deposits</h2>
+<h2>Admin - Deposits</h2>
 
 {% for d in deposits %}
-    <div class="card">
-        <p><b>User:</b> {{ d.user }}</p>
-        <p><b>Amount:</b> ₦{{ d.amount }}</p>
-        <p>
-            <b>Status:</b> 
-            <span class="{{ d.status }}">{{ d.status }}</span>
-        </p>
+<div class="card">
 
-        <a href="/approve/{{ loop.index0 }}">
-            <button class="approve">Approve</button>
-        </a>
+    <p><b>User:</b> {{ d.user }}</p>
+    <p><b>Amount:</b> ₦{{ d.amount }}</p>
 
-        <a href="/reject/{{ loop.index0 }}">
-            <button class="reject">Reject</button>
-        </a>
-    </div>
+    <p>
+        <b>Status:</b> 
+        <span style="
+            color:
+            {% if d.status == 'pending' %}orange
+            {% elif d.status == 'approved' %}lightgreen
+            {% else %}red
+            {% endif %}
+        ">
+            {{ d.status }}
+        </span>
+    </p>
+
+    {% if d.status == "pending" %}
+        <a href="/approve/{{ loop.index0 }}" class="btn"> Approve</a>
+        <a href="/reject/{{ loop.index0 }}" class="btn btn-danger"> Reject</a>
+    {% endif %}
+
+</div>
 {% endfor %}
 
-</body>
-</html>
+{% endblock %}
